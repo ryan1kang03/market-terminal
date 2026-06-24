@@ -1,10 +1,9 @@
-from modules.data_connector import get_historical_bars, get_latest_quote
 from modules.chart import plot_historical_bars
 from modules.ui import launch_ui
 
-# Show chart first
-plot_historical_bars("AAPL", days=30)
+symbol = input("Enter symbol for historical chart (default: AAPL): ").upper().strip()
+if not symbol:
+    symbol = "AAPL"
 
-# Then launch the live UI
-from modules.ui import launch_ui
+plot_historical_bars(symbol, days=30)
 launch_ui()
