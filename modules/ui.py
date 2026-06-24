@@ -2,7 +2,11 @@ import tkinter as tk
 import threading
 import time
 from datetime import datetime
+<<<<<<< HEAD
 from modules.data_connector import get_latest_quote, get_latest_trade
+=======
+from modules.data_connector import start_quote_stream
+>>>>>>> 53219dd8acafb4d1e5baa447af55900ced70f932
 
 # ── Color palette ─────────────────────────────────────────────────────────────
 BG        = "#050a0f"
@@ -29,6 +33,9 @@ class MarketTerminal:
         self.running = False
         self.quote_history = []
         self.flash_job = None
+        self._stream_client = None
+        self._prev_bid = None
+        self._tick_count = 0
 
         self._build_ui()
         self._start_clock()
@@ -269,6 +276,8 @@ class MarketTerminal:
         if not sym:
             return
         self.running = True
+        self._prev_bid = None
+        self._tick_count = 0
         self.quote_history.clear()
         self.symbol_label.config(text=sym)
         self.status_dot.config(fg=GREEN)
@@ -281,6 +290,12 @@ class MarketTerminal:
 
     def stop_stream(self):
         self.running = False
+        if self._stream_client:
+            try:
+                self._stream_client.stop()
+            except Exception:
+                pass
+            self._stream_client = None
         self.status_dot.config(fg=MUTED)
         self.status_label.config(text="OFFLINE", fg=MUTED)
         self.start_btn.config(bg=GREEN, fg=BG)
@@ -288,6 +303,7 @@ class MarketTerminal:
         self._log(f"[{self._ts()}] DISCONNECTED", "red")
 
     def _fetch_loop(self, symbol):
+<<<<<<< HEAD
         prev_bid = None
         tick_count = 0
         while self.running:
@@ -304,28 +320,32 @@ class MarketTerminal:
                 spread = round(ask - bid, 4) if ask > 0 else 0.0
                 mid    = round((bid + ask) / 2, 2) if ask > 0 else bid
                 tick_count += 1
+=======
+        def on_quote(bid, ask):
+            if self.running:
+                self.root.after(0, self._on_quote, bid, ask, symbol)
+>>>>>>> 53219dd8acafb4d1e5baa447af55900ced70f932
 
-                self.quote_history.append(mid)
-                if len(self.quote_history) > 120:
-                    self.quote_history.pop(0)
+        def on_error(e):
+            self.root.after(0, self._log, f"[{self._ts()}] ERR: {e}", "red")
 
-                hi  = max(self.quote_history)
-                lo  = min(self.quote_history)
-                avg = round(sum(self.quote_history) / len(self.quote_history), 2)
+        self._stream_client = start_quote_stream(symbol, on_quote, on_error)
+        try:
+            self._stream_client.run()
+        except Exception as e:
+            if self.running:
+                self.root.after(0, self._log, f"[{self._ts()}] STREAM ERR: {e}", "red")
 
-                chg = ""
-                chg_color = WHITE
-                if prev_bid is not None:
-                    delta = round(bid - prev_bid, 2)
-                    if delta > 0:
-                        chg = f"▲ +{delta:.2f}"
-                        chg_color = GREEN
-                    elif delta < 0:
-                        chg = f"▼ {delta:.2f}"
-                        chg_color = RED
+    def _on_quote(self, bid, ask, symbol):
+        spread = round(ask - bid, 4) if ask > 0 else 0.0
+        mid = round((bid + ask) / 2, 2) if ask > 0 else bid
+        self._tick_count += 1
 
-                prev_bid = bid
+        self.quote_history.append(mid)
+        if len(self.quote_history) > 120:
+            self.quote_history.pop(0)
 
+<<<<<<< HEAD
                 self.root.after(0, self._update_ui,
                                 bid, ask, last, spread, mid, chg, chg_color,
                                 hi, lo, tick_count, avg, latency, symbol)
@@ -333,11 +353,35 @@ class MarketTerminal:
                 self.root.after(0, self._log,
                                 f"[{self._ts()}] ERR: {e}", "red")
             time.sleep(3)
+=======
+        hi  = max(self.quote_history)
+        lo  = min(self.quote_history)
+        avg = round(sum(self.quote_history) / len(self.quote_history), 2)
+
+        chg = ""
+        chg_color = WHITE
+        if self._prev_bid is not None:
+            delta = round(bid - self._prev_bid, 2)
+            if delta > 0:
+                chg = f"▲ +{delta:.2f}"
+                chg_color = GREEN
+            elif delta < 0:
+                chg = f"▼ {delta:.2f}"
+                chg_color = RED
+
+        self._prev_bid = bid
+        self._update_ui(bid, ask, spread, mid, chg, chg_color,
+                        hi, lo, self._tick_count, avg, "WS", symbol)
+>>>>>>> 53219dd8acafb4d1e5baa447af55900ced70f932
 
     def _update_ui(self, bid, ask, last, spread, mid, chg, chg_color,
                    hi, lo, ticks, avg, latency, symbol):
         self.price_var.set(f"{mid:,.2f}")
         self.price_label.config(fg=chg_color if chg else WHITE)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 53219dd8acafb4d1e5baa447af55900ced70f932
         self.change_label.config(text=chg, fg=chg_color)
 
         self.bid_var.set(f"{bid:,.2f}")
@@ -348,7 +392,7 @@ class MarketTerminal:
         self.lo_var.set(f"{lo:,.2f}")
         self.tick_var.set(str(ticks))
         self.avg_var.set(f"{avg:,.2f}")
-        self.lat_var.set(f"{latency} ms")
+        self.lat_var.set(f"{latency} ms" if isinstance(latency, int) else latency)
 
         self._draw_spark()
         self._flash_price(chg_color)
