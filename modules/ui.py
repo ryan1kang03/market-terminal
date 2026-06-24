@@ -2,7 +2,7 @@ import tkinter as tk
 import threading
 import time
 from datetime import datetime
-from modules.data_connector import get_latest_quote
+from modules.data_connector import get_latest_quote, get_latest_trade
 
 # ── Color palette ─────────────────────────────────────────────────────────────
 BG        = "#050a0f"
@@ -103,23 +103,24 @@ class MarketTerminal:
                                     bg=PANEL, fg=WHITE)
         self.price_label.pack(side=tk.LEFT)
 
-        # ✅ Fixed: store Label reference, not StringVar
         self.change_label = tk.Label(price_frame, text="",
                                      font=(FONT_MONO, 13), bg=PANEL, fg=GREEN)
         self.change_label.pack(side=tk.LEFT, padx=14, pady=14)
 
         tk.Frame(panel, bg=BORDER, height=1).pack(fill=tk.X, padx=10)
+
+        # BID / ASK / LAST TRADE row
         row = tk.Frame(panel, bg=PANEL)
         row.pack(fill=tk.X, padx=10, pady=8)
 
-        self.bid_var = tk.StringVar(value="---")
-        self.ask_var = tk.StringVar(value="---")
-        self.spd_var = tk.StringVar(value="---")
+        self.bid_var   = tk.StringVar(value="---")
+        self.ask_var   = tk.StringVar(value="---")
+        self.last_var  = tk.StringVar(value="---")
 
         for label, var, color, col in [
-            ("BID",    self.bid_var, GREEN,  0),
-            ("ASK",    self.ask_var, RED,    1),
-            ("SPREAD", self.spd_var, YELLOW, 2),
+            ("BID",        self.bid_var,  GREEN,  0),
+            ("ASK",        self.ask_var,  RED,    1),
+            ("LAST TRADE", self.last_var, YELLOW, 2),
         ]:
             f = tk.Frame(row, bg=PANEL)
             f.grid(row=0, column=col, padx=20, sticky="w")
@@ -293,11 +294,15 @@ class MarketTerminal:
             t0 = time.time()
             try:
                 quote = get_latest_quote(symbol)
+                trade = get_latest_trade(symbol)
                 latency = int((time.time() - t0) * 1000)
-                bid = float(quote.bid_price)
-                ask = float(quote.ask_price)
+
+                bid  = float(quote.bid_price)
+                ask  = float(quote.ask_price)
+                last = float(trade.price)
+
                 spread = round(ask - bid, 4) if ask > 0 else 0.0
-                mid = round((bid + ask) / 2, 2) if ask > 0 else bid
+                mid    = round((bid + ask) / 2, 2) if ask > 0 else bid
                 tick_count += 1
 
                 self.quote_history.append(mid)
@@ -322,41 +327,36 @@ class MarketTerminal:
                 prev_bid = bid
 
                 self.root.after(0, self._update_ui,
-                                bid, ask, spread, mid, chg, chg_color,
+                                bid, ask, last, spread, mid, chg, chg_color,
                                 hi, lo, tick_count, avg, latency, symbol)
             except Exception as e:
                 self.root.after(0, self._log,
                                 f"[{self._ts()}] ERR: {e}", "red")
-
             time.sleep(3)
 
-    def _update_ui(self, bid, ask, spread, mid, chg, chg_color,
+    def _update_ui(self, bid, ask, last, spread, mid, chg, chg_color,
                    hi, lo, ticks, avg, latency, symbol):
-        # Price + change
         self.price_var.set(f"{mid:,.2f}")
         self.price_label.config(fg=chg_color if chg else WHITE)
-        # ✅ Fixed: use .config() on the Label, not StringVar
         self.change_label.config(text=chg, fg=chg_color)
 
-        # Bid / Ask / Spread
         self.bid_var.set(f"{bid:,.2f}")
         self.ask_var.set(f"{ask:,.2f}")
-        self.spd_var.set(f"{spread:.4f}")
+        self.last_var.set(f"{last:,.2f}")
 
-        # Stats
         self.hi_var.set(f"{hi:,.2f}")
         self.lo_var.set(f"{lo:,.2f}")
         self.tick_var.set(str(ticks))
         self.avg_var.set(f"{avg:,.2f}")
         self.lat_var.set(f"{latency} ms")
 
-        # Sparkline + flash + log
         self._draw_spark()
         self._flash_price(chg_color)
+
         tag = "green" if "▲" in chg else ("red" if "▼" in chg else "dim")
         self._log(
             f"[{self._ts()}]  {symbol}  bid={bid:.2f}  ask={ask:.2f}  "
-            f"spd={spread:.4f}  lat={latency}ms", tag)
+            f"last={last:.2f}  lat={latency}ms", tag)
 
     def _draw_spark(self):
         c = self.spark_canvas
@@ -390,10 +390,10 @@ class MarketTerminal:
         c.create_oval(last_x-4, last_y-4, last_x+4, last_y+4,
                       fill=ACCENT, outline=WHITE, width=1)
 
-        c.create_text(4, 8,    text=f"H {hi:.2f}",
+        c.create_text(4, 8,   text=f"H {hi:.2f}",
                       font=(FONT_MONO, 7), fill=GREEN, anchor="w")
-        c.create_text(4, h-6,  text=f"L {lo:.2f}",
-                      font=(FONT_MONO, 7), fill=RED,   anchor="w")
+        c.create_text(4, h-6, text=f"L {lo:.2f}",
+                      font=(FONT_MONO, 7), fill=RED, anchor="w")
 
     def _flash_price(self, color):
         if self.flash_job:
