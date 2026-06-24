@@ -103,7 +103,6 @@ class MarketTerminal:
                                     bg=PANEL, fg=WHITE)
         self.price_label.pack(side=tk.LEFT)
 
-        # ✅ Fixed: store Label reference, not StringVar
         self.change_label = tk.Label(price_frame, text="",
                                      font=(FONT_MONO, 13), bg=PANEL, fg=GREEN)
         self.change_label.pack(side=tk.LEFT, padx=14, pady=14)
@@ -332,10 +331,9 @@ class MarketTerminal:
 
     def _update_ui(self, bid, ask, spread, mid, chg, chg_color,
                    hi, lo, ticks, avg, latency, symbol):
-        # Price + change
         self.price_var.set(f"{mid:,.2f}")
         self.price_label.config(fg=chg_color if chg else WHITE)
-        # ✅ Fixed: use .config() on the Label, not StringVar
+
         self.change_label.config(text=chg, fg=chg_color)
 
         # Bid / Ask / Spread
