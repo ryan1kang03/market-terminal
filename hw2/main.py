@@ -100,7 +100,7 @@ def run(ticker: str, years: int, risk_free: float, cost_bps: float) -> None:
     print(f"\n=== Backtesting {ticker} over {years}y ===")
 
     # 1. Data
-    df = data_loader.load_data(ticker, years=years)
+    df = data_loader.load_data(ticker, years, allow_synthetic=False)
     source = df.attrs.get("source", "unknown")
     print(f"Loaded {len(df)} daily bars  (source: {source}, "
           f"{df.index[0].date()} -> {df.index[-1].date()})")
@@ -165,7 +165,7 @@ def main():
     p.add_argument("--cost-bps", type=float, default=1.0,
                    help="Per-trade slippage in basis points")
     args = p.parse_args()
-    run(args.ticker.upper(), max(args.years, 1), args.risk_free, args.cost_bps)
+    run(args.ticker.upper(), max(args.years, 5), args.risk_free, args.cost_bps)
 
 
 if __name__ == "__main__":

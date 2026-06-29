@@ -24,6 +24,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv()
 
 CACHE_DIR = Path(__file__).resolve().parent.parent / "data"
 CACHE_DIR.mkdir(exist_ok=True)
@@ -94,8 +97,8 @@ def load_data(
 # Alpaca
 # --------------------------------------------------------------------------- #
 def _try_alpaca(ticker: str, start: datetime, end: datetime) -> pd.DataFrame | None:
-    api_key = os.getenv("ALPACA_API_KEY")
-    secret_key = os.getenv("ALPACA_SECRET_KEY")
+    api_key = os.getenv("ALPACA_API_KEY") or os.getenv("APCA_API_KEY_ID")
+    secret_key = os.getenv("ALPACA_SECRET_KEY") or os.getenv("APCA_API_SECRET_KEY")
     if not api_key or not secret_key:
         return None
 
@@ -103,6 +106,7 @@ def _try_alpaca(ticker: str, start: datetime, end: datetime) -> pd.DataFrame | N
         from alpaca.data.historical import StockHistoricalDataClient
         from alpaca.data.requests import StockBarsRequest
         from alpaca.data.timeframe import TimeFrame
+        from alpaca.data.enums import DataFeed
 
         client = StockHistoricalDataClient(api_key, secret_key)
         request = StockBarsRequest(
@@ -110,7 +114,8 @@ def _try_alpaca(ticker: str, start: datetime, end: datetime) -> pd.DataFrame | N
             timeframe=TimeFrame.Day,
             start=start,
             end=end,
-            adjustment="all",  # split & dividend adjusted
+            adjustment="all",
+            feed=DataFeed.IEX,
         )
         bars = client.get_stock_bars(request)
         df = bars.df
