@@ -389,6 +389,15 @@ def run(ticker: str, years: int, risk_free: float, cost_bps: float) -> None:
     print(f"Charts  : {CHARTS}")
     print(f"CSV     : {REPORT / f'performance_{ticker}.csv'}")
 
+    # Open the PDF in the system default viewer automatically.
+    import os, sys
+    if sys.platform == "win32":
+        os.startfile(pdf)
+    elif sys.platform == "darwin":
+        os.system(f'open "{pdf}"')
+    else:
+        os.system(f'xdg-open "{pdf}"')
+
 
 def main():
     p = argparse.ArgumentParser(description="Alpaca strategy backtester")
