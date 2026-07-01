@@ -5,6 +5,4 @@ matplotlib>=3.7
 reportlab>=4.0
 pillow>=10.0
 pyarrow>=14.0
-python-dotenv
-# Optional, only used for rendering the report to images during testing:
-# pdf2image, pdfplumber
+python-dotenv>=1.0

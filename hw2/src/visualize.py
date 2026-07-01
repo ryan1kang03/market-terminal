@@ -72,10 +72,19 @@ def price_chart(
     )
 
     ax1.plot(df.index, df["close"], color="#222", lw=1.0, label="Close")
-    if "sma_50" in df:
-        ax1.plot(df.index, df["sma_50"], color="#1f77b4", lw=0.9, label="SMA 50")
-    if "sma_200" in df:
-        ax1.plot(df.index, df["sma_200"], color="#ff7f0e", lw=0.9, label="SMA 200")
+
+    # Show EMAs for the Custom strategy, SMAs for others.
+    is_custom = "Custom" in result.name
+    if is_custom:
+        if "ema_50" in df:
+            ax1.plot(df.index, df["ema_50"], color="#1f77b4", lw=0.9, label="EMA 50")
+        if "ema_200" in df:
+            ax1.plot(df.index, df["ema_200"], color="#ff7f0e", lw=0.9, label="EMA 200")
+    else:
+        if "sma_50" in df:
+            ax1.plot(df.index, df["sma_50"], color="#1f77b4", lw=0.9, label="SMA 50")
+        if "sma_200" in df:
+            ax1.plot(df.index, df["sma_200"], color="#ff7f0e", lw=0.9, label="SMA 200")
     if {"bb_upper", "bb_lower"}.issubset(df.columns):
         ax1.plot(df.index, df["bb_upper"], color="#999", lw=0.6, ls="--")
         ax1.plot(df.index, df["bb_lower"], color="#999", lw=0.6, ls="--")
